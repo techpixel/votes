@@ -1,5 +1,5 @@
 import { redirect } from '@sveltejs/kit';
-import { getParticipantContext } from '$lib/server/flow';
+import { getParticipantContext, flowDestination } from '$lib/server/flow';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -7,8 +7,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 
 	const ctx = await getParticipantContext(locals.user);
 	if (!ctx) redirect(302, '/');
-	if (ctx.event.stage === 'DRAFT') redirect(302, '/waiting');
-	if (ctx.event.stage === 'CLOSED') redirect(302, '/closed');
+	// Submit pages only exist during SUBMISSION — editing locks once voting starts.
+	if (ctx.event.stage !== 'SUBMISSION') redirect(302, flowDestination(ctx));
 
 	return {
 		event: {

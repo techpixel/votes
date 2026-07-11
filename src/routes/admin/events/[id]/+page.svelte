@@ -11,7 +11,11 @@
 	const stages = [
 		{ value: 'DRAFT', label: 'Draft', description: 'Hidden from participants' },
 		{ value: 'SUBMISSION', label: 'Submission', description: 'Teams form and submit projects' },
-		{ value: 'VOTING', label: 'Voting', description: 'Participants vote on projects' },
+		{
+			value: 'VOTING',
+			label: 'Voting',
+			description: 'Participants vote on projects. Submissions lock — no new or edited projects.'
+		},
 		{ value: 'CLOSED', label: 'Closed', description: 'Voting has ended' }
 	];
 </script>

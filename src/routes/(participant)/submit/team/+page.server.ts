@@ -14,7 +14,7 @@ export const actions: Actions = {
 		if (!locals.user) redirect(302, '/login');
 		const ctx = await getParticipantContext(locals.user);
 		if (!ctx) redirect(302, '/');
-		if (ctx.event.stage !== 'SUBMISSION' && ctx.event.stage !== 'VOTING') redirect(302, '/');
+		if (ctx.event.stage !== 'SUBMISSION') redirect(302, '/');
 
 		const form = await request.formData();
 		let ids: string[];
@@ -42,7 +42,7 @@ export const actions: Actions = {
 		);
 		if (taken) {
 			return fail(400, {
-				message: `${taken.firstName ?? taken.email} is already on another team.`
+				message: `${taken.firstName ?? 'A person you selected'} is already on another team.`
 			});
 		}
 

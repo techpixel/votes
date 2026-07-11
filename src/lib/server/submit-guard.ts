@@ -1,14 +1,15 @@
 import { redirect } from '@sveltejs/kit';
 import { getParticipantContext, SUBMIT_STEPS, type SubmitStep, type ParticipantContext } from './flow';
 
-/** Action guard: signed in, participant, and the event accepts submissions. */
+/**
+ * Action guard: signed in, participant, and the event accepts submissions.
+ * Submissions lock the moment voting starts — no new or edited submissions during VOTING.
+ */
 export async function requireSubmissionCtx(locals: App.Locals): Promise<ParticipantContext> {
 	if (!locals.user) redirect(302, '/login');
 	const ctx = await getParticipantContext(locals.user);
 	if (!ctx) redirect(302, '/');
-	if (ctx.event.stage !== 'SUBMISSION' && ctx.event.stage !== 'VOTING') {
-		redirect(302, '/');
-	}
+	if (ctx.event.stage !== 'SUBMISSION') redirect(302, '/');
 	return ctx;
 }
 

@@ -49,7 +49,9 @@ export function flowDestination(ctx: ParticipantContext): string {
 	if (event.stage === 'DRAFT') return '/waiting';
 	if (event.stage === 'CLOSED') return '/closed';
 
-	// Submission incomplete: finish it, even during VOTING (must submit before voting).
+	// Submissions lock when voting starts; teams that never submitted sit voting out.
+	if (event.stage === 'VOTING') return project?.submittedAt ? '/project' : '/locked';
+
 	if (!team) return '/submit/team';
 	if (!project || !project.submittedAt) {
 		const step = SUBMIT_STEPS[Math.min(project?.currentStep ?? 1, SUBMIT_STEPS.length - 1)];

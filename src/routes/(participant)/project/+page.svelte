@@ -25,9 +25,18 @@
 		/>
 	</div>
 	<div class="flex items-center justify-center gap-2.5 font-bricolage">
-		<a href="/submit/team" class="{buttonClasses} border-cream text-white hover:bg-white/10">
-			Edit
-		</a>
+		{#if votingOpen}
+			<span
+				class="{buttonClasses} cursor-not-allowed border-[#9b9b9b] text-[#9b9b9b]"
+				title="Submissions are locked while voting is open"
+			>
+				Edit
+			</span>
+		{:else}
+			<a href="/submit/team" class="{buttonClasses} border-cream text-white hover:bg-white/10">
+				Edit
+			</a>
+		{/if}
 		{#if votingOpen}
 			<a href="/vote" class="{buttonClasses} border-cream text-white hover:bg-white/10">
 				Begin Voting
