@@ -24,7 +24,7 @@
 	</div>
 	{#if showCruxLogo}
 		<img
-			src="/brand/crux-logo.png"
+			src="/brand/crux-logo.webp"
 			alt="Horizons Crux"
 			class="absolute top-4 right-4 z-10 h-20 w-[137px] object-contain"
 		/>

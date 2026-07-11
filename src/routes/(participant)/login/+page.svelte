@@ -9,7 +9,7 @@
 <FlowCard>
 	<div class="flex h-full flex-col items-center px-6">
 		<img
-			src="/brand/crux-logo.png"
+			src="/brand/crux-logo.webp"
 			alt="Horizons Crux"
 			class="mt-16 h-[190px] w-[327px] object-contain drop-shadow-sm"
 		/>

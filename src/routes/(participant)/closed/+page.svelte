@@ -8,7 +8,7 @@
 
 <FlowCard>
 	<div class="flex h-full flex-col items-center justify-center gap-4 px-10 text-center">
-		<img src="/brand/crux-logo.png" alt="Horizons Crux" class="h-[140px] w-auto object-contain" />
+		<img src="/brand/crux-logo.webp" alt="Horizons Crux" class="h-[140px] w-auto object-contain" />
 		<h1 class="text-2xl font-bold">Voting has closed</h1>
 		<p class="text-sm text-white/80">
 			Thanks for participating in Horizons Crux! Results are on their way.

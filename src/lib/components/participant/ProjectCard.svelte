@@ -151,7 +151,7 @@
 
 		<div class="relative z-10 flex h-full flex-col p-4">
 			<img
-				src="/brand/crux-logo.png"
+				src="/brand/crux-logo.webp"
 				alt="Horizons Crux"
 				class="{size === 'lg'
 					? 'h-11'
