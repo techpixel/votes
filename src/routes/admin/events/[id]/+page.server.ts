@@ -1,0 +1,51 @@
+import { error, fail } from '@sveltejs/kit';
+import { prisma } from '$lib/server/db';
+import type { Actions, PageServerLoad } from './$types';
+
+export const load: PageServerLoad = async () => ({});
+
+const STAGES = ['DRAFT', 'SUBMISSION', 'VOTING', 'CLOSED'] as const;
+
+export const actions: Actions = {
+	stage: async ({ params, request }) => {
+		const form = await request.formData();
+		const stage = String(form.get('stage'));
+		if (!STAGES.includes(stage as (typeof STAGES)[number])) {
+			return fail(400, { message: 'Invalid stage' });
+		}
+		await prisma.event.update({
+			where: { id: params.id },
+			data: { stage: stage as (typeof STAGES)[number] }
+		});
+		return { staged: true };
+	},
+
+	settings: async ({ params, request }) => {
+		const form = await request.formData();
+		const voteLimit = Number(form.get('voteLimit'));
+		const maxTeamSize = Number(form.get('maxTeamSize'));
+		if (!Number.isInteger(voteLimit) || voteLimit < 1 || !Number.isInteger(maxTeamSize) || maxTeamSize < 1) {
+			return fail(400, { message: 'Vote limit and team size must be positive whole numbers' });
+		}
+		const checklistItems = String(form.get('checklistItems') ?? '')
+			.split('\n')
+			.map((s) => s.trim())
+			.filter(Boolean);
+
+		const event = await prisma.event.findUnique({ where: { id: params.id } });
+		if (!event) error(404);
+
+		await prisma.event.update({
+			where: { id: params.id },
+			data: {
+				name: String(form.get('name') ?? event.name).trim() || event.name,
+				voteLimit,
+				maxTeamSize,
+				airtableBaseId: String(form.get('airtableBaseId') ?? '').trim() || null,
+				airtableTableId: String(form.get('airtableTableId') ?? '').trim() || null,
+				checklistItems
+			}
+		});
+		return { saved: true };
+	}
+};

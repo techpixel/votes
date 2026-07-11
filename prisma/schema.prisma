@@ -1,0 +1,154 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum EventStage {
+  DRAFT
+  SUBMISSION
+  VOTING
+  CLOSED
+}
+
+model Event {
+  id              String     @id @default(cuid())
+  name            String
+  slug            String     @unique
+  stage           EventStage @default(DRAFT)
+  voteLimit       Int        @default(3)
+  maxTeamSize     Int        @default(3)
+  airtableBaseId  String?
+  airtableTableId String?
+  checklistItems  String[]
+  createdAt       DateTime   @default(now())
+
+  participants Participant[]
+  teams        Team[]
+  projects     Project[]
+  votes        Vote[]
+  admins       EventAdmin[]
+}
+
+model EventAdmin {
+  id        String   @id @default(cuid())
+  eventId   String
+  email     String
+  addedBy   String?
+  createdAt DateTime @default(now())
+
+  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+
+  @@unique([eventId, email])
+}
+
+model Participant {
+  id        String  @id @default(cuid())
+  eventId   String
+  email     String
+  firstName String?
+  lastName  String?
+  userId    String?
+
+  event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)
+  teamMember TeamMember?
+  votes      Vote[]
+
+  @@unique([eventId, email])
+}
+
+model User {
+  id             String    @id @default(cuid())
+  hackclubId     String    @unique
+  email          String    @unique
+  name           String?
+  slackId        String?
+  accessToken    String?
+  refreshToken   String?
+  tokenExpiresAt DateTime?
+  createdAt      DateTime  @default(now())
+
+  sessions     Session[]
+  participants Participant[]
+}
+
+model Session {
+  id        String   @id
+  userId    String
+  expiresAt DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Team {
+  id                     String   @id @default(cuid())
+  eventId                String
+  createdByParticipantId String
+  createdAt              DateTime @default(now())
+
+  event   Event        @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  members TeamMember[]
+  project Project?
+}
+
+model TeamMember {
+  id                String   @id @default(cuid())
+  teamId            String
+  participantId     String   @unique
+  hoursEstimate     Float?
+  hackatimeProjects String[]
+
+  team           Team            @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  participant    Participant     @relation(fields: [participantId], references: [id], onDelete: Cascade)
+  airtableRecord AirtableRecord?
+}
+
+model Project {
+  id                   String    @id @default(cuid())
+  teamId               String    @unique
+  eventId              String
+  name                 String    @default("")
+  description          String    @default("")
+  screenshotUrl        String?
+  demoUrl              String?
+  repoUrl              String?
+  currentStep          Int       @default(0)
+  checklistCompletedAt DateTime?
+  submittedAt          DateTime?
+  createdAt            DateTime  @default(now())
+
+  team            Team             @relation(fields: [teamId], references: [id], onDelete: Cascade)
+  event           Event            @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  votes           Vote[]
+  airtableRecords AirtableRecord[]
+}
+
+model AirtableRecord {
+  id               String    @id @default(cuid())
+  projectId        String
+  teamMemberId     String    @unique
+  airtableRecordId String?
+  lastSyncedAt     DateTime?
+  syncError        String?
+
+  project    Project    @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  teamMember TeamMember @relation(fields: [teamMemberId], references: [id], onDelete: Cascade)
+}
+
+model Vote {
+  id                 String   @id @default(cuid())
+  eventId            String
+  voterParticipantId String
+  projectId          String
+  createdAt          DateTime @default(now())
+
+  event   Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  voter   Participant @relation(fields: [voterParticipantId], references: [id], onDelete: Cascade)
+  project Project     @relation(fields: [projectId], references: [id], onDelete: Cascade)
+
+  @@unique([voterParticipantId, projectId])
+}
