@@ -1,5 +1,7 @@
 import { redirect } from '@sveltejs/kit';
 import { getParticipantContext, flowDestination } from '$lib/server/flow';
+import { getDisplayNames } from '$lib/server/cachet';
+import { shortName } from '$lib/names';
 import type { LayoutServerLoad } from './$types';
 
 export const load: LayoutServerLoad = async ({ locals }) => {
@@ -9,6 +11,15 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 	if (!ctx) redirect(302, '/');
 	// Submit pages only exist during SUBMISSION — editing locks once voting starts.
 	if (ctx.event.stage !== 'SUBMISSION') redirect(302, flowDestination(ctx));
+
+	// Teammates are identified by Slack display name + "First L." — never email.
+	const slackIds = [
+		ctx.participant.slackId,
+		...(ctx.team?.members.map((m) => m.participant.slackId) ?? [])
+	].filter((id): id is string => !!id);
+	const displayNames = await getDisplayNames(slackIds);
+	const displayNameOf = (slackId: string | null) =>
+		slackId ? (displayNames.get(slackId) ?? null) : null;
 
 	return {
 		event: {
@@ -20,7 +31,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		},
 		participant: {
 			id: ctx.participant.id,
-			email: ctx.participant.email,
+			name: shortName(ctx.participant.firstName, ctx.participant.lastName),
+			displayName: displayNameOf(ctx.participant.slackId),
 			firstName: ctx.participant.firstName,
 			lastName: ctx.participant.lastName
 		},
@@ -28,10 +40,8 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 			? ctx.team.members.map((m) => ({
 					id: m.id,
 					participantId: m.participantId,
-					name:
-						`${m.participant.firstName ?? ''} ${m.participant.lastName ?? ''}`.trim() ||
-						m.participant.email,
-					email: m.participant.email,
+					name: shortName(m.participant.firstName, m.participant.lastName),
+					displayName: displayNameOf(m.participant.slackId),
 					hoursEstimate: m.hoursEstimate,
 					hackatimeProjects: m.hackatimeProjects
 				}))

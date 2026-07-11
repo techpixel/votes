@@ -1,11 +1,15 @@
 import { redirect } from '@sveltejs/kit';
 import { getParticipantContext, flowDestination, type ParticipantContext } from './flow';
 
-/** Voting requires: signed in, participant, stage VOTING, and own project submitted. */
+/**
+ * Voting requires: signed in, participant, completed Attend registration,
+ * stage VOTING, and own project submitted.
+ */
 export async function requireVotingCtx(locals: App.Locals): Promise<ParticipantContext> {
 	if (!locals.user) redirect(302, '/login');
 	const ctx = await getParticipantContext(locals.user);
 	if (!ctx) redirect(302, '/');
+	if (!ctx.participant.attendCompleted) redirect(302, flowDestination(ctx));
 	if (ctx.event.stage !== 'VOTING') redirect(302, flowDestination(ctx));
 	if (!ctx.project?.submittedAt) redirect(302, flowDestination(ctx));
 	return ctx;

@@ -7,24 +7,28 @@
 
 	let { data, form } = $props();
 
-	type Member = { participantId: string; name: string; email: string };
+	type Member = { participantId: string; name: string; displayName: string | null };
 
 	const self: Member = {
 		participantId: data.participant.id,
-		name:
-			`${data.participant.firstName ?? ''} ${data.participant.lastName ?? ''}`.trim() ||
-			data.participant.email,
-		email: data.participant.email
+		name: data.participant.name || data.participant.displayName || 'You',
+		displayName: data.participant.displayName
 	};
 
 	let members = $state<Member[]>(
 		data.members
-			? data.members.map((m) => ({ participantId: m.participantId, name: m.name, email: m.email }))
+			? data.members.map((m) => ({
+					participantId: m.participantId,
+					name: m.name,
+					displayName: m.displayName
+				}))
 			: [self]
 	);
 
+	type SearchResult = { id: string; name: string; displayName: string | null };
+
 	let query = $state('');
-	let results = $state<{ id: string; name: string; email: string }[]>([]);
+	let results = $state<SearchResult[]>([]);
 	let searching = $state(false);
 	let debounceTimer: ReturnType<typeof setTimeout>;
 
@@ -54,9 +58,9 @@
 		}, 200);
 	}
 
-	function add(r: { id: string; name: string; email: string }) {
+	function add(r: SearchResult) {
 		if (atCapacity) return;
-		members = [...members, { participantId: r.id, name: r.name, email: r.email }];
+		members = [...members, { participantId: r.id, name: r.name, displayName: r.displayName }];
 		query = '';
 		results = [];
 	}
@@ -80,7 +84,7 @@
 
 		<div class="mt-9 flex flex-col gap-1.5">
 			<p class="text-xs text-[#ccc]">
-				Search by name or email. Max ({data.event.maxTeamSize})
+				Search by Slack display name. Max ({data.event.maxTeamSize})
 			</p>
 			<div class="relative">
 				<div
@@ -90,7 +94,7 @@
 						type="text"
 						bind:value={query}
 						oninput={search}
-						placeholder="my@team.com"
+						placeholder="orpheus"
 						disabled={atCapacity}
 						class="w-full border-none bg-transparent p-0 text-base text-white placeholder-[#999] focus:ring-0 disabled:opacity-50"
 					/>
@@ -105,8 +109,10 @@
 								onclick={() => add(r)}
 								class="flex w-full cursor-pointer flex-col px-3 py-1.5 text-left hover:bg-white/10"
 							>
-								<span class="text-base font-medium text-white">{r.name}</span>
-								<span class="text-xs text-[#999]">{r.email}</span>
+								<span class="text-base font-medium text-white">{r.displayName || r.name}</span>
+								{#if r.displayName && r.name}
+									<span class="text-xs text-[#999]">{r.name}</span>
+								{/if}
 							</button>
 						{/each}
 					</div>
@@ -126,9 +132,11 @@
 					class="group relative rounded-xl border border-white p-3 transition-all duration-150 hover:bg-white/10 hover:shadow-[inset_0_0_0_1px_white]"
 				>
 					<p class="text-base font-medium text-white">
-						{m.name}{m.participantId === self.participantId ? ' (you)' : ''}
+						{m.displayName || m.name}{m.participantId === self.participantId ? ' (you)' : ''}
 					</p>
-					<p class="text-xs text-[#999]">{m.email}</p>
+					{#if m.displayName && m.name}
+						<p class="text-xs text-[#999]">{m.name}</p>
+					{/if}
 					{#if m.participantId !== self.participantId}
 						<button
 							type="button"

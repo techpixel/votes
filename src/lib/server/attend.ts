@@ -54,6 +54,9 @@ export interface AttendRosterEntry {
 	email: string;
 	firstName: string | null;
 	lastName: string | null;
+	slackId: string | null;
+	/** Attend registration status, e.g. "complete" | "in_progress" | "invited". */
+	status: string | null;
 }
 
 /**
@@ -79,9 +82,19 @@ export async function fetchAttendRoster(attendSlug: string): Promise<AttendRoste
 	const data = await res.json();
 	return (data.participants ?? [])
 		.filter((p: { email?: string }) => typeof p.email === 'string' && p.email.includes('@'))
-		.map((p: { email: string; first_name?: string; last_name?: string }) => ({
-			email: p.email.toLowerCase().trim(),
-			firstName: p.first_name || null,
-			lastName: p.last_name || null
-		}));
+		.map(
+			(p: {
+				email: string;
+				first_name?: string;
+				last_name?: string;
+				slack_user_id?: string;
+				status?: string;
+			}) => ({
+				email: p.email.toLowerCase().trim(),
+				firstName: p.first_name || null,
+				lastName: p.last_name || null,
+				slackId: p.slack_user_id || null,
+				status: p.status || null
+			})
+		);
 }

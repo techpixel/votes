@@ -112,6 +112,12 @@ export async function signIn(identity: HackClubIdentity, tokens: TokenResponse):
 		where: { email: user.email, userId: null },
 		data: { userId: user.id }
 	});
+	if (user.slackId) {
+		await prisma.participant.updateMany({
+			where: { email: user.email, slackId: null },
+			data: { slackId: user.slackId }
+		});
+	}
 
 	await provisionAttendParticipation(user);
 
@@ -138,6 +144,8 @@ async function provisionAttendParticipation(user: User): Promise<void> {
 			events.map(async (event) => {
 				const lookup = await lookupAttendParticipant(event.slug, user.email);
 				if (!lookup?.registered) return;
+				if (lookup.status === 'withdrawn' || lookup.status === 'rejected') return;
+				const attendCompleted = lookup.status === 'complete';
 				await prisma.participant.upsert({
 					where: { eventId_email: { eventId: event.id, email: user.email } },
 					create: {
@@ -145,9 +153,15 @@ async function provisionAttendParticipation(user: User): Promise<void> {
 						email: user.email,
 						userId: user.id,
 						firstName: firstName || null,
-						lastName: lastName || null
+						lastName: lastName || null,
+						slackId: user.slackId,
+						attendCompleted
 					},
-					update: { userId: user.id }
+					update: {
+						userId: user.id,
+						...(user.slackId ? { slackId: user.slackId } : {}),
+						...(lookup.status ? { attendCompleted } : {})
+					}
 				});
 			})
 		);

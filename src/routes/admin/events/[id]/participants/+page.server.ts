@@ -19,6 +19,8 @@ export const load: PageServerLoad = async ({ params }) => {
 			id: p.id,
 			email: p.email,
 			name: `${p.firstName ?? ''} ${p.lastName ?? ''}`.trim(),
+			slackId: p.slackId,
+			attendCompleted: p.attendCompleted,
 			signedUp: !!p.user,
 			onTeam: !!p.teamMember
 		}))
@@ -42,20 +44,35 @@ export const actions: Actions = {
 			return fail(502, { message: e instanceof Error ? e.message : 'Attend roster fetch failed.' });
 		}
 
-		const result = await prisma.participant.createMany({
-			data: roster.map((p) => ({
-				eventId: params.id,
-				email: p.email,
-				firstName: p.firstName,
-				lastName: p.lastName
-			})),
-			skipDuplicates: true
-		});
+		// Upsert (not createMany) so existing rows pick up name/slackId changes.
+		const existing = await prisma.participant.count({ where: { eventId: params.id } });
+		for (const p of roster) {
+			await prisma.participant.upsert({
+				where: { eventId_email: { eventId: params.id, email: p.email } },
+				create: {
+					eventId: params.id,
+					email: p.email,
+					firstName: p.firstName,
+					lastName: p.lastName,
+					slackId: p.slackId,
+					attendCompleted: p.status === 'complete'
+				},
+				// Never clobber slackId/attendCompleted captured at sign-in with
+				// nulls (e.g. while Attend doesn't return these fields yet).
+				update: {
+					firstName: p.firstName,
+					lastName: p.lastName,
+					...(p.slackId ? { slackId: p.slackId } : {}),
+					...(p.status ? { attendCompleted: p.status === 'complete' } : {})
+				}
+			});
+		}
+		const total = await prisma.participant.count({ where: { eventId: params.id } });
 
 		return {
 			synced: {
-				added: result.count,
-				skipped: roster.length - result.count,
+				added: total - existing,
+				skipped: roster.length - (total - existing),
 				total: roster.length
 			}
 		};

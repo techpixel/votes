@@ -46,12 +46,15 @@ model EventAdmin {
 }
 
 model Participant {
-  id        String  @id @default(cuid())
-  eventId   String
-  email     String
-  firstName String?
-  lastName  String?
-  userId    String?
+  id              String  @id @default(cuid())
+  eventId         String
+  email           String
+  firstName       String?
+  lastName        String?
+  slackId         String?
+  /** Attend registration is complete ("complete" status). Gates voting. */
+  attendCompleted Boolean @default(false)
+  userId          String?
 
   event      Event       @relation(fields: [eventId], references: [id], onDelete: Cascade)
   user       User?       @relation(fields: [userId], references: [id], onDelete: SetNull)

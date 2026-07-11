@@ -63,6 +63,7 @@
 					<Table.Row>
 						<Table.Head>Email</Table.Head>
 						<Table.Head>Name</Table.Head>
+						<Table.Head>Slack ID</Table.Head>
 						<Table.Head>Status</Table.Head>
 						<Table.Head class="w-20"></Table.Head>
 					</Table.Row>
@@ -73,10 +74,21 @@
 							<Table.Cell class="font-medium">{p.email}</Table.Cell>
 							<Table.Cell>{p.name || '—'}</Table.Cell>
 							<Table.Cell>
+								{#if p.slackId}
+									<code class="text-xs">{p.slackId}</code>
+								{:else}
+									<span class="text-xs text-muted-foreground">—</span>
+								{/if}
+							</Table.Cell>
+							<Table.Cell>
 								<div class="flex gap-1.5">
+									{#if p.attendCompleted}
+										<Badge>Completed</Badge>
+									{:else}
+										<Badge variant="outline">In Progress</Badge>
+									{/if}
 									{#if p.signedUp}<Badge variant="secondary">signed up</Badge>{/if}
 									{#if p.onTeam}<Badge variant="secondary">on a team</Badge>{/if}
-									{#if !p.signedUp && !p.onTeam}<span class="text-xs text-muted-foreground">invited</span>{/if}
 								</div>
 							</Table.Cell>
 							<Table.Cell>
@@ -99,7 +111,7 @@
 						</Table.Row>
 					{:else}
 						<Table.Row>
-							<Table.Cell colspan={4} class="text-center text-muted-foreground">
+							<Table.Cell colspan={5} class="text-center text-muted-foreground">
 								No participants yet — sync from Attend to get started
 							</Table.Cell>
 						</Table.Row>
