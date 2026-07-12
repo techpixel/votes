@@ -1,5 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
+import { getDisplayNames } from '$lib/server/cachet';
 import type { PageServerLoad } from './$types';
 
 // Public read-only project view — no auth, no emails (see gallery load).
@@ -15,8 +16,15 @@ export const load: PageServerLoad = async ({ params }) => {
 		error(404, 'Project not found');
 	}
 
+	const displayNames = await getDisplayNames(
+		project.team.members.map((m) => m.participant.slackId).filter((id) => id !== null)
+	);
 	const makers = project.team.members
-		.map((m) => `${m.participant.firstName ?? ''} ${m.participant.lastName ?? ''}`.trim())
+		.map(
+			(m) =>
+				(m.participant.slackId && displayNames.get(m.participant.slackId)) ||
+				`${m.participant.firstName ?? ''} ${m.participant.lastName ?? ''}`.trim()
+		)
 		.filter(Boolean);
 
 	return {
