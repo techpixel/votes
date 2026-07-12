@@ -7,7 +7,8 @@ import type { RequestHandler } from './$types';
 
 export const GET: RequestHandler = async ({ locals, url }) => {
 	if (!locals.user) error(401, 'Not signed in');
-	const ctx = await getParticipantContext(locals.user);
+	const slug = url.searchParams.get('event') ?? undefined;
+	const ctx = await getParticipantContext(locals.user, slug);
 	if (!ctx) error(403, 'Not a participant');
 
 	const q = url.searchParams.get('q')?.trim().toLowerCase() ?? '';

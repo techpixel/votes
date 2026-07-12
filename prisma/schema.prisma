@@ -25,6 +25,7 @@ model Event {
   airtableTableId String?
   logoUrl         String?
   backgroundUrl   String?
+  tagline         String?
   checklistItems  String[]
   createdAt       DateTime   @default(now())
 

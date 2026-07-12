@@ -6,8 +6,8 @@ import type { RequestHandler } from './$types';
 // Matches Airtable's per-attachment ceiling for URL-based attachments (5 GB).
 const MAX_SIZE = 5 * 1024 * 1024 * 1024;
 
-export const POST: RequestHandler = async ({ locals, request }) => {
-	await requireProjectCtx(locals);
+export const POST: RequestHandler = async ({ locals, request, url }) => {
+	await requireProjectCtx(locals, url.searchParams.get('event') ?? '');
 
 	const form = await request.formData();
 	const file = form.get('file');

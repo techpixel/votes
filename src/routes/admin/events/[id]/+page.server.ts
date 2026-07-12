@@ -58,6 +58,7 @@ export const actions: Actions = {
 				airtableTableId: String(form.get('airtableTableId') ?? '').trim() || null,
 				logoUrl: String(form.get('logoUrl') ?? '').trim() || null,
 				backgroundUrl: String(form.get('backgroundUrl') ?? '').trim() || null,
+				tagline: String(form.get('tagline') ?? '').trim() || null,
 				checklistItems
 			}
 		});

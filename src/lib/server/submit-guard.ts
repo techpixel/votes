@@ -1,22 +1,31 @@
 import { redirect } from '@sveltejs/kit';
-import { getParticipantContext, SUBMIT_STEPS, type SubmitStep, type ParticipantContext } from './flow';
+import {
+	getParticipantContext,
+	flowDestination,
+	SUBMIT_STEPS,
+	type SubmitStep,
+	type ParticipantContext
+} from './flow';
 
 /**
  * Action guard: signed in, participant, and the event accepts submissions.
  * Submissions lock the moment voting starts — no new or edited submissions during VOTING.
  */
-export async function requireSubmissionCtx(locals: App.Locals): Promise<ParticipantContext> {
+export async function requireSubmissionCtx(
+	locals: App.Locals,
+	slug: string
+): Promise<ParticipantContext> {
 	if (!locals.user) redirect(302, '/login');
-	const ctx = await getParticipantContext(locals.user);
+	const ctx = await getParticipantContext(locals.user, slug);
 	if (!ctx) redirect(302, '/');
-	if (ctx.event.stage !== 'SUBMISSION') redirect(302, '/');
+	if (ctx.event.stage !== 'SUBMISSION') redirect(302, flowDestination(ctx));
 	return ctx;
 }
 
 /** Action guard for steps after `team`: a team + draft project must exist. */
-export async function requireProjectCtx(locals: App.Locals) {
-	const ctx = await requireSubmissionCtx(locals);
-	if (!ctx.team || !ctx.project) redirect(302, '/submit/team');
+export async function requireProjectCtx(locals: App.Locals, slug: string) {
+	const ctx = await requireSubmissionCtx(locals, slug);
+	if (!ctx.team || !ctx.project) redirect(302, `/e/${slug}/submit/team`);
 	return { ...ctx, team: ctx.team, project: ctx.project };
 }
 
@@ -26,14 +35,15 @@ export async function requireProjectCtx(locals: App.Locals) {
  */
 export function guardStepOrder(
 	data: { members: unknown; project: { currentStep: number; submittedAt: Date | null } | null },
-	step: SubmitStep
+	step: SubmitStep,
+	slug: string
 ) {
 	if (step === 'team') return;
-	if (!data.members || !data.project) redirect(302, '/submit/team');
+	if (!data.members || !data.project) redirect(302, `/e/${slug}/submit/team`);
 	if (!data.project.submittedAt) {
 		const idx = SUBMIT_STEPS.indexOf(step);
 		if (idx > data.project.currentStep) {
-			redirect(302, `/submit/${SUBMIT_STEPS[data.project.currentStep]}`);
+			redirect(302, `/e/${slug}/submit/${SUBMIT_STEPS[data.project.currentStep]}`);
 		}
 	}
 }

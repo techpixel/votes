@@ -5,7 +5,7 @@ import type { RequestHandler } from './$types';
 
 /** Suggests Hackatime project names for a teammate (identified by Slack ID). */
 export const GET: RequestHandler = async ({ locals, url, fetch }) => {
-	const ctx = await requireProjectCtx(locals);
+	const ctx = await requireProjectCtx(locals, url.searchParams.get('event') ?? '');
 
 	const participantId = url.searchParams.get('participantId');
 	if (!participantId) error(400, 'participantId required');
