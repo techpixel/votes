@@ -32,6 +32,19 @@
 	<main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-28 lg:py-10">
 		{@render children()}
 	</main>
+	{#if data.signedIn}
+		<div class="fixed right-4 bottom-4 z-10 flex items-center gap-1.5 text-xs text-[#999]">
+			<form method="POST" action="/auth/logout">
+				<button type="submit" class="cursor-pointer transition-colors hover:text-white">
+					Sign out
+				</button>
+			</form>
+			{#if data.isAdmin}
+				<span aria-hidden="true">•</span>
+				<a href="/admin" class="transition-colors hover:text-white">Admin</a>
+			{/if}
+		</div>
+	{/if}
 </div>
 
 <style>

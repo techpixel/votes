@@ -1,3 +1,4 @@
+import { getAdminScope } from '$lib/server/admin';
 import type { LayoutServerLoad } from './$types';
 
 // Platform-default branding for the login screen and the event picker, where
@@ -7,6 +8,11 @@ import type { LayoutServerLoad } from './$types';
 const DEFAULT_LOGO = '/brand/crux-logo.webp';
 const DEFAULT_BACKGROUND = '/brand/card-art.webp';
 
-export const load: LayoutServerLoad = () => {
-	return { logoUrl: DEFAULT_LOGO, backgroundUrl: DEFAULT_BACKGROUND };
+export const load: LayoutServerLoad = async ({ locals }) => {
+	return {
+		logoUrl: DEFAULT_LOGO,
+		backgroundUrl: DEFAULT_BACKGROUND,
+		signedIn: !!locals.user,
+		isAdmin: !!(await getAdminScope(locals.user))
+	};
 };

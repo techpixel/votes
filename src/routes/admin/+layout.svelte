@@ -45,13 +45,19 @@
 	<title>Admin · Vote</title>
 </svelte:head>
 
-<div class:dark={theme === 'dark'} class="flex min-h-screen bg-background font-sans text-foreground">
+<div
+	class:dark={theme === 'dark'}
+	class="flex min-h-screen bg-background font-sans text-foreground"
+>
 	<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r bg-sidebar">
-		<div class="flex items-center justify-between border-b px-5 py-4">
-			<a href="/admin" class="text-sm font-semibold tracking-tight">Vote Admin</a>
-			{#if data.superadmin}
-				<Badge variant="secondary" class="text-[10px]">Superadmin</Badge>
-			{/if}
+		<div class="flex items-center border-b px-5 py-4">
+			<a href="/admin">
+				<img
+					src={theme === 'dark' ? '/brand/logo-dm.svg' : '/brand/logo-lm.svg'}
+					alt="Vote"
+					class="h-10"
+				/>
+			</a>
 		</div>
 
 		<nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
@@ -64,6 +70,17 @@
 			>
 				All events
 			</a>
+			{#if data.superadmin}
+				<a
+					href="/admin/api-docs"
+					class="rounded-md px-3 py-2 text-sm font-medium transition-colors {page.url.pathname ===
+					'/admin/api-docs'
+						? 'bg-sidebar-accent text-sidebar-accent-foreground'
+						: 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
+				>
+					API
+				</a>
+			{/if}
 
 			<p class="mt-3 px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 				Events
@@ -77,14 +94,19 @@
 						: 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
 				>
 					<span class="truncate">{event.name}</span>
-					<span class="ml-2 shrink-0 text-[10px] text-muted-foreground uppercase">{event.stage}</span>
+					<span class="ml-2 shrink-0 text-[10px] text-muted-foreground uppercase"
+						>{event.stage}</span
+					>
 				</a>
 				{#if activeEventId === event.id}
 					<div class="mb-1 ml-3 flex flex-col gap-0.5 border-l pl-3">
 						{#each eventSubLinks(event.id) as link (link.href)}
 							<a
 								href={link.href}
-								class="rounded-md px-3 py-1.5 text-sm transition-colors {isActive(link.href, link.exact)
+								class="rounded-md px-3 py-1.5 text-sm transition-colors {isActive(
+									link.href,
+									link.exact
+								)
 									? 'font-medium text-foreground'
 									: 'text-muted-foreground hover:text-foreground'}"
 							>
@@ -100,7 +122,12 @@
 
 		<div class="border-t p-4">
 			<div class="flex items-center justify-between gap-2">
-				<p class="truncate text-xs text-muted-foreground">{data.adminEmail}</p>
+				<div class="flex min-w-0 items-center gap-2">
+					<p class="truncate text-xs text-muted-foreground">{data.adminEmail}</p>
+					<Badge variant="secondary" class="shrink-0 text-[10px]">
+						{data.superadmin ? 'Superadmin' : 'Admin'}
+					</Badge>
+				</div>
 				<button
 					type="button"
 					onclick={toggleTheme}
@@ -116,7 +143,10 @@
 				</button>
 			</div>
 			<form method="POST" action="/auth/logout" class="mt-1">
-				<button type="submit" class="cursor-pointer text-xs text-muted-foreground hover:text-foreground">
+				<button
+					type="submit"
+					class="cursor-pointer text-xs text-muted-foreground hover:text-foreground"
+				>
 					Sign out
 				</button>
 			</form>

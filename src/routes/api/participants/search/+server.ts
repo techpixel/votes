@@ -1,7 +1,7 @@
 import { error, json } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
 import { getParticipantContext } from '$lib/server/flow';
-import { getDisplayNames } from '$lib/server/cachet';
+import { getDisplayNames } from '$lib/server/slack';
 import { shortName } from '$lib/names';
 import type { RequestHandler } from './$types';
 
@@ -15,7 +15,7 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	if (q.length < 2) return json({ results: [] });
 
 	// Match by Slack display name, which requires resolving names for the whole
-	// candidate pool first (cachet memoizes, so this is cheap after the first
+	// candidate pool first (lookups are memoized, so this is cheap after the first
 	// search). First name remains matchable; emails are neither matched nor returned.
 	const pool = await prisma.participant.findMany({
 		where: {

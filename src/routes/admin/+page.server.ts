@@ -1,6 +1,8 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
 import { getAdminScope } from '$lib/server/admin';
+import { slugify } from '$lib/server/slug';
+import { CHECKLIST_ITEMS } from '$lib/server/checklist';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -37,16 +39,7 @@ export const actions: Actions = {
 		const name = String(form.get('name') ?? '').trim();
 		if (!name) return fail(400, { message: 'Event name is required' });
 
-		const slug =
-			String(form.get('slug') ?? '')
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9-]+/g, '-')
-				.replace(/^-+|-+$/g, '') ||
-			name
-				.toLowerCase()
-				.replace(/[^a-z0-9-]+/g, '-')
-				.replace(/^-+|-+$/g, '');
+		const slug = slugify(String(form.get('slug') ?? '').trim()) || slugify(name);
 
 		const existing = await prisma.event.findUnique({ where: { slug } });
 		if (existing) return fail(400, { message: `An event with slug "${slug}" already exists` });
@@ -57,7 +50,7 @@ export const actions: Actions = {
 				slug,
 				voteLimit: Number(form.get('voteLimit')) || 3,
 				maxTeamSize: Number(form.get('maxTeamSize')) || 3,
-				checklistItems: []
+				checklistItems: CHECKLIST_ITEMS
 			}
 		});
 		redirect(302, `/admin/events/${event.id}`);

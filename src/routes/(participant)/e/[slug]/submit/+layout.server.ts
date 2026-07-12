@@ -1,6 +1,6 @@
 import { redirect } from '@sveltejs/kit';
 import { getParticipantContext, flowDestination } from '$lib/server/flow';
-import { getDisplayNames } from '$lib/server/cachet';
+import { getDisplayNames } from '$lib/server/slack';
 import { shortName } from '$lib/names';
 import type { LayoutServerLoad } from './$types';
 

@@ -1,6 +1,6 @@
 import { error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
-import { getDisplayNames } from '$lib/server/cachet';
+import { getDisplayNames } from '$lib/server/slack';
 import type { PageServerLoad } from './$types';
 
 // Public read-only project view — no auth, no emails (see gallery load).
