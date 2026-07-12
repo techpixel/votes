@@ -1,10 +1,10 @@
 import { error, json } from '@sveltejs/kit';
 import { z } from 'zod';
-import { env } from '$env/dynamic/private';
 import { prisma } from '$lib/server/db';
 import { requireApiKey } from '$lib/server/api-auth';
 import { CHECKLIST_ITEMS } from '$lib/server/checklist';
 import { slugify } from '$lib/server/slug';
+import { resolveOrigin, serializeEvent } from '$lib/server/event-response';
 import { Prisma } from '../../../../generated/prisma/client';
 import type { RequestHandler } from './$types';
 
@@ -40,8 +40,13 @@ export const POST: RequestHandler = async ({ request, url }) => {
 	const slug = slugify(parsed.data.slug ?? parsed.data.name);
 	if (!slug) error(400, 'slug must contain at least one alphanumeric character');
 
-	if (await prisma.event.findUnique({ where: { slug } })) {
-		error(409, `An event with slug "${slug}" already exists`);
+	const origin = resolveOrigin(url);
+
+	// Idempotent-by-slug: if the event already exists, link to it (200) instead
+	// of creating a duplicate. Its fields are left untouched.
+	const existing = await prisma.event.findUnique({ where: { slug } });
+	if (existing) {
+		return json(serializeEvent(existing, origin), { status: 200 });
 	}
 
 	let event;
@@ -58,28 +63,14 @@ export const POST: RequestHandler = async ({ request, url }) => {
 			}
 		});
 	} catch (e) {
-		// Race between the uniqueness pre-check and the insert.
+		// Race between the uniqueness pre-check and the insert: another request
+		// created the same slug first, so fall back to linking that event.
 		if (e instanceof Prisma.PrismaClientKnownRequestError && e.code === 'P2002') {
-			error(409, `An event with slug "${slug}" already exists`);
+			const raced = await prisma.event.findUnique({ where: { slug } });
+			if (raced) return json(serializeEvent(raced, origin), { status: 200 });
 		}
 		throw e;
 	}
 
-	const origin = (env.APP_ORIGIN || url.origin).trim().replace(/\/+$/, '');
-	return json(
-		{
-			id: event.id,
-			name: event.name,
-			slug: event.slug,
-			stage: event.stage,
-			voteLimit: event.voteLimit,
-			maxTeamSize: event.maxTeamSize,
-			logoUrl: event.logoUrl,
-			backgroundUrl: event.backgroundUrl,
-			createdAt: event.createdAt.toISOString(),
-			adminUrl: `${origin}/admin/events/${event.id}`,
-			galleryUrl: `${origin}/gallery/${event.slug}`
-		},
-		{ status: 201 }
-	);
+	return json(serializeEvent(event, origin), { status: 201 });
 };
