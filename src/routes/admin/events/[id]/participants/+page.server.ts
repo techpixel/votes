@@ -11,7 +11,8 @@ export const load: PageServerLoad = async ({ params }) => {
 		orderBy: { email: 'asc' },
 		include: {
 			user: { select: { id: true } },
-			teamMember: { select: { teamId: true } }
+			teamMember: { select: { teamId: true } },
+			_count: { select: { votes: true } }
 		}
 	});
 	return {
@@ -22,7 +23,8 @@ export const load: PageServerLoad = async ({ params }) => {
 			slackId: p.slackId,
 			attendCompleted: p.attendCompleted,
 			signedUp: !!p.user,
-			onTeam: !!p.teamMember
+			onTeam: !!p.teamMember,
+			votesCast: p._count.votes
 		}))
 	};
 };

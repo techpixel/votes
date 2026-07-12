@@ -1,4 +1,6 @@
 import 'dotenv/config';
+import { readFileSync } from 'node:fs';
+import { parse as parseYaml } from 'yaml';
 import { PrismaClient } from '../src/generated/prisma/client';
 import { PrismaPg } from '@prisma/adapter-pg';
 
@@ -17,12 +19,7 @@ async function main() {
 			maxTeamSize: 3,
 			airtableBaseId: 'app2wgVgZnozM92TT',
 			airtableTableId: 'tblc2ZbkLmfNRXmJf',
-			checklistItems: [
-				'My project has a working, playable demo',
-				'My code is in a public GitHub repository',
-				'Everyone on my team is signed up and added to the team',
-				'My screenshot shows the project in action'
-			]
+			checklistItems: parseYaml(readFileSync(new URL('../checklist.yaml', import.meta.url), 'utf8'))
 		}
 	});
 

@@ -43,13 +43,6 @@
 			type: 'integer',
 			required: 'No',
 			description: 'Members per team, 1–20. Defaults to 3.'
-		},
-		{
-			field: 'checklist',
-			type: 'string',
-			required: 'No',
-			description:
-				'YAML list of submission checklist items, e.g. "- Add a demo link". Defaults to no checklist.'
 		}
 	];
 
@@ -57,7 +50,7 @@
 		{
 			status: '400',
 			cause:
-				'Malformed JSON, failed validation, invalid checklist YAML, or a slug with no alphanumeric characters.'
+				'Malformed JSON, failed validation, or a slug with no alphanumeric characters.'
 		},
 		{ status: '401', cause: 'Missing or incorrect API key.' },
 		{ status: '409', cause: 'An event with the same slug already exists.' },
@@ -70,8 +63,7 @@
   -d '{
     "name": "Scrapyard Austin",
     "logoUrl": "https://cdn.hackclub.com/example/logo.webp",
-    "backgroundUrl": "https://cdn.hackclub.com/example/background.webp",
-    "checklist": "- Add a demo link\\n- Upload a screenshot"
+    "backgroundUrl": "https://cdn.hackclub.com/example/background.webp"
   }'`);
 
 	const responseExample = $derived(`{
@@ -83,7 +75,6 @@
   "maxTeamSize": 3,
   "logoUrl": "https://cdn.hackclub.com/example/logo.webp",
   "backgroundUrl": "https://cdn.hackclub.com/example/background.webp",
-  "checklistItems": ["Add a demo link", "Upload a screenshot"],
   "createdAt": "2026-07-11T00:00:00.000Z",
   "adminUrl": "${origin}/admin/events/cmcz1234567890abcdef",
   "galleryUrl": "${origin}/gallery/scrapyard-austin"

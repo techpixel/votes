@@ -2,6 +2,7 @@ import { error, fail, redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
 import { getAdminScope } from '$lib/server/admin';
 import { slugify } from '$lib/server/slug';
+import { CHECKLIST_ITEMS } from '$lib/server/checklist';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -49,7 +50,7 @@ export const actions: Actions = {
 				slug,
 				voteLimit: Number(form.get('voteLimit')) || 3,
 				maxTeamSize: Number(form.get('maxTeamSize')) || 3,
-				checklistItems: []
+				checklistItems: CHECKLIST_ITEMS
 			}
 		});
 		redirect(302, `/admin/events/${event.id}`);

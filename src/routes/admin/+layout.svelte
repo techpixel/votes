@@ -50,17 +50,14 @@
 	class="flex min-h-screen bg-background font-sans text-foreground"
 >
 	<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r bg-sidebar">
-		<div class="flex items-center justify-between border-b px-5 py-4">
+		<div class="flex items-center border-b px-5 py-4">
 			<a href="/admin">
 				<img
 					src={theme === 'dark' ? '/brand/logo-dm.svg' : '/brand/logo-lm.svg'}
 					alt="Vote"
-					class="h-5"
+					class="h-10"
 				/>
 			</a>
-			{#if data.superadmin}
-				<Badge variant="secondary" class="text-[10px]">Superadmin</Badge>
-			{/if}
 		</div>
 
 		<nav class="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
@@ -125,7 +122,12 @@
 
 		<div class="border-t p-4">
 			<div class="flex items-center justify-between gap-2">
-				<p class="truncate text-xs text-muted-foreground">{data.adminEmail}</p>
+				<div class="flex min-w-0 items-center gap-2">
+					<p class="truncate text-xs text-muted-foreground">{data.adminEmail}</p>
+					<Badge variant="secondary" class="shrink-0 text-[10px]">
+						{data.superadmin ? 'Superadmin' : 'Admin'}
+					</Badge>
+				</div>
 				<button
 					type="button"
 					onclick={toggleTheme}

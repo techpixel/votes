@@ -99,9 +99,13 @@
 		return [f(0), f(8), f(4)];
 	}
 
-	// Clamp saturation into a vivid range; s === 0 stays 0 so the grayscale
-	// fallback isn't tinted red (hue 0).
-	const sat = (s: number, lo: number, hi: number) => (s === 0 ? 0 : Math.min(hi, Math.max(lo, s)));
+	// Clamp saturation into a vivid range — but only for genuinely colorful
+	// sources. Below the knee the boost is proportional (lo * s/KNEE, meeting
+	// the clamp exactly at the knee), so near-gray screenshots keep a muted
+	// ramp instead of having a faint tint yanked up to the floor.
+	const SAT_KNEE = 0.25;
+	const sat = (s: number, lo: number, hi: number) =>
+		s < SAT_KNEE ? lo * (s / SAT_KNEE) : Math.min(hi, Math.max(lo, s));
 
 	$effect(() => {
 		const url = screenshotUrl;
@@ -130,9 +134,9 @@
 					const g = data[i + 1] / 255;
 					const b = data[i + 2] / 255;
 					const c = Math.max(r, g, b) - Math.min(r, g, b);
-					// True grays carry no hue vote, but lightly tinted grays still
-					// count — the saturation floor below boosts their hue so it
-					// pops instead of reading as gray.
+					// True grays carry no hue vote; lightly tinted grays still count
+					// but keep their low saturation through the proportional boost,
+					// so they read as tinted gray rather than vivid color.
 					if (c < 0.03) continue;
 					const bin = Math.min(BINS - 1, Math.floor((hueSat(r, g, b).h / 6) * BINS));
 					const w = c * c;
@@ -180,10 +184,10 @@
 							? [found[0], found[1], rot(found[0], 0.8)]
 							: [rot(found[0] ?? base, -0.8), found[0] ?? base, rot(found[0] ?? base, 0.8)];
 				meshPalette = [
-					hsl(base.h, sat(base.s, 0.3, 0.7), 0.16),
-					hsl(blobs[0].h, sat(blobs[0].s, 0.5, 0.85), 0.5),
-					hsl(blobs[1].h, sat(blobs[1].s, 0.5, 0.85), 0.56),
-					hsl(blobs[2].h, sat(blobs[2].s, 0.5, 0.85), 0.62)
+					hsl(base.h, sat(base.s, 0.3, 0.65), 0.16),
+					hsl(blobs[0].h, sat(blobs[0].s, 0.45, 0.75), 0.5),
+					hsl(blobs[1].h, sat(blobs[1].s, 0.45, 0.75), 0.56),
+					hsl(blobs[2].h, sat(blobs[2].s, 0.45, 0.75), 0.62)
 				];
 			} catch {
 				// Canvas tainted (no CORS on the image host) — keep the default palette.

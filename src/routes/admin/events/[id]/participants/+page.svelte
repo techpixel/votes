@@ -89,6 +89,7 @@
 									{/if}
 									{#if p.signedUp}<Badge variant="secondary">signed up</Badge>{/if}
 									{#if p.onTeam}<Badge variant="secondary">on a team</Badge>{/if}
+									{#if p.votesCast > 0}<Badge variant="secondary">voted ({p.votesCast})</Badge>{/if}
 								</div>
 							</Table.Cell>
 							<Table.Cell>
