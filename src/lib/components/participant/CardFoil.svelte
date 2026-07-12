@@ -69,6 +69,16 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 			return;
 		}
 
+		// A crashed GPU process fires webglcontextlost — drop the foil layer
+		// entirely rather than leaving a dead canvas in the blend stack.
+		const el = canvas;
+		const onContextLost = (e: Event) => {
+			e.preventDefault();
+			renderNow = null;
+			supported = false;
+		};
+		el.addEventListener('webglcontextlost', onContextLost);
+
 		const compile = (type: number, src: string) => {
 			const shader = gl.createShader(type)!;
 			gl.shaderSource(shader, src);
@@ -129,6 +139,7 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 		observer.observe(canvas);
 		return () => {
 			observer.disconnect();
+			el.removeEventListener('webglcontextlost', onContextLost);
 			renderNow = null;
 		};
 	});
