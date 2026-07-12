@@ -48,5 +48,18 @@ export const actions: Actions = {
 		const projectId = String(form.get('projectId'));
 		await syncProjectToAirtable(projectId);
 		return { resynced: true };
+	},
+
+	// syncProjectToAirtable never throws — per-project errors land in
+	// syncError and show up in the Airtable status column.
+	resyncAll: async ({ params }) => {
+		const projects = await prisma.project.findMany({
+			where: { eventId: params.id, submittedAt: { not: null } },
+			select: { id: true }
+		});
+		for (const p of projects) {
+			await syncProjectToAirtable(p.id);
+		}
+		return { resyncedAll: projects.length };
 	}
 };

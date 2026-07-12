@@ -6,15 +6,27 @@
 	import * as Table from '$lib/components/ui/table';
 	import { Badge } from '$lib/components/ui/badge';
 
-	let { data } = $props();
+	let { data, form } = $props();
 </script>
 
 <Card.Root>
 	<Card.Header>
-		<Card.Title>Projects ({data.projects.length})</Card.Title>
-		<Card.Description>
-			Submitted projects are mirrored to Airtable — one record per team member.
-		</Card.Description>
+		<div class="flex flex-wrap items-start justify-between gap-4">
+			<div class="flex flex-col gap-1.5">
+				<Card.Title>Projects ({data.projects.length})</Card.Title>
+				<Card.Description>
+					Submitted projects are mirrored to Airtable — one record per team member.
+				</Card.Description>
+			</div>
+			<form method="POST" action="?/resyncAll" use:enhance>
+				<Button type="submit" variant="outline">Resync all to Airtable</Button>
+			</form>
+		</div>
+		{#if form?.resyncedAll != null}
+			<p class="text-sm text-muted-foreground">
+				Resynced {form.resyncedAll} submitted {form.resyncedAll === 1 ? 'project' : 'projects'}.
+			</p>
+		{/if}
 	</Card.Header>
 	<Card.Content>
 		<Table.Root>
