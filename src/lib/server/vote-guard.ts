@@ -5,9 +5,12 @@ import { getParticipantContext, flowDestination, type ParticipantContext } from 
  * Voting requires: signed in, participant, completed Attend registration,
  * stage VOTING, and own project submitted.
  */
-export async function requireVotingCtx(locals: App.Locals): Promise<ParticipantContext> {
+export async function requireVotingCtx(
+	locals: App.Locals,
+	slug: string
+): Promise<ParticipantContext> {
 	if (!locals.user) redirect(302, '/login');
-	const ctx = await getParticipantContext(locals.user);
+	const ctx = await getParticipantContext(locals.user, slug);
 	if (!ctx) redirect(302, '/');
 	if (!ctx.participant.attendCompleted) redirect(302, flowDestination(ctx));
 	if (ctx.event.stage !== 'VOTING') redirect(302, flowDestination(ctx));

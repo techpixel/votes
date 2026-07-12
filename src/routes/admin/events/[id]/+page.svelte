@@ -112,6 +112,13 @@
 					</div>
 				</div>
 				<div class="flex flex-col gap-1.5">
+					<Label for="tagline">Tagline</Label>
+					<Input id="tagline" name="tagline" placeholder="A hackathon in Europe's techno capital" value={data.event.tagline ?? ''} />
+					<p class="text-xs text-muted-foreground">
+						Short caption shown under the event name on the picker card. Leave blank to omit.
+					</p>
+				</div>
+				<div class="flex flex-col gap-1.5">
 					<Label for="checklistItems">Pre-submission checklist (one item per line)</Label>
 					<Textarea id="checklistItems" name="checklistItems" rows={4} value={data.event.checklistItems.join('\n')} />
 				</div>
