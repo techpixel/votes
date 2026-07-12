@@ -102,6 +102,16 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 			return;
 		}
 
+		// A crashed GPU process fires webglcontextlost and leaves the canvas
+		// blank — swap to the gray fallback instead of showing a dead canvas.
+		const el = canvas;
+		const onContextLost = (e: Event) => {
+			e.preventDefault();
+			renderNow = null;
+			supported = false;
+		};
+		el.addEventListener('webglcontextlost', onContextLost);
+
 		const compile = (type: number, src: string) => {
 			const shader = gl.createShader(type)!;
 			gl.shaderSource(shader, src);
@@ -157,6 +167,7 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 		observer.observe(canvas);
 		return () => {
 			observer.disconnect();
+			el.removeEventListener('webglcontextlost', onContextLost);
 			renderNow = null;
 		};
 	});
@@ -170,17 +181,11 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 		renderNow?.();
 	});
 
-	const fallbackCss = $derived(
-		`background:
-			radial-gradient(80% 60% at 20% 15%, rgb(${palette[1].map((c) => c * 255).join(',')}) 0%, transparent 60%),
-			radial-gradient(70% 55% at 85% 45%, rgb(${palette[2].map((c) => c * 255).join(',')}) 0%, transparent 60%),
-			radial-gradient(90% 70% at 40% 90%, rgb(${palette[3].map((c) => c * 255).join(',')}) 0%, transparent 65%),
-			rgb(${palette[0].map((c) => c * 255).join(',')});`
-	);
 </script>
 
 {#if supported}
 	<canvas bind:this={canvas} class="absolute inset-0 h-full w-full"></canvas>
 {:else}
-	<div class="absolute inset-0" style={fallbackCss}></div>
+	<!-- Shader unavailable/failed/crashed: flat gray keeps the white card text readable. -->
+	<div class="absolute inset-0 bg-neutral-600"></div>
 {/if}

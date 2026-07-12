@@ -67,7 +67,8 @@
 	}
 
 	// Derive the mesh gradient stops from the screenshot: sample it small,
-	// sort by luminance, and average quartiles into a dark→light 4-stop ramp.
+	// sort by luminance, and take a chroma-weighted average per quartile into
+	// a dark→light 4-stop ramp that leans toward the image's colorful pixels.
 	let meshPalette = $state<Palette>(DEFAULT_PALETTE);
 
 	$effect(() => {
@@ -99,8 +100,21 @@
 				);
 				const quartile = (from: number, to: number): [number, number, number] => {
 					const slice = px.slice(Math.floor(px.length * from), Math.ceil(px.length * to));
-					const sum = slice.reduce((acc, p) => [acc[0] + p[0], acc[1] + p[1], acc[2] + p[2]], [0, 0, 0]);
-					return [sum[0] / slice.length, sum[1] / slice.length, sum[2] / slice.length];
+					// Weight each pixel by chroma² so saturated colors dominate the
+					// stop and the ramp stays colorful; grays still contribute (the
+					// epsilon also keeps grayscale screenshots working) but a plain
+					// average would wash every stop toward gray.
+					const sum = [0, 0, 0];
+					let wsum = 0;
+					for (const p of slice) {
+						const chroma = Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]);
+						const w = 0.02 + chroma * chroma;
+						sum[0] += p[0] * w;
+						sum[1] += p[1] * w;
+						sum[2] += p[2] * w;
+						wsum += w;
+					}
+					return [sum[0] / wsum, sum[1] / wsum, sum[2] / wsum];
 				};
 				meshPalette = [quartile(0, 0.25), quartile(0.25, 0.5), quartile(0.5, 0.75), quartile(0.75, 1)];
 			} catch {
@@ -176,7 +190,7 @@
 			<p
 				class="mt-1 overflow-hidden text-white transition-opacity {voted
 					? 'opacity-0'
-					: ''} {size === 'lg' ? 'line-clamp-2 text-xl leading-snug' : 'line-clamp-2 text-base leading-snug'}"
+					: ''} {size === 'lg' ? 'line-clamp-4 text-xl leading-snug' : 'line-clamp-4 text-base leading-snug'}"
 			>
 				{description}
 			</p>
