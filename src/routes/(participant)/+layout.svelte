@@ -32,6 +32,16 @@
 	<main class="relative z-10 flex min-h-screen items-center justify-center px-4 py-28 lg:py-10">
 		{@render children()}
 	</main>
+	{#if data.signedIn}
+		<form method="POST" action="/auth/logout" class="fixed right-4 bottom-4 z-10">
+			<button
+				type="submit"
+				class="cursor-pointer text-xs text-[#999] transition-colors hover:text-white"
+			>
+				Sign out
+			</button>
+		</form>
+	{/if}
 </div>
 
 <style>

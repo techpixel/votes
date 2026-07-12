@@ -19,5 +19,5 @@ export const load: LayoutServerLoad = async ({ locals }) => {
 		}
 	}
 
-	return { logoUrl, backgroundUrl };
+	return { logoUrl, backgroundUrl, signedIn: !!locals.user };
 };
