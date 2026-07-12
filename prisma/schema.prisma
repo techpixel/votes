@@ -54,6 +54,9 @@ model Participant {
   firstName       String?
   lastName        String?
   slackId         String?
+  /** Slack display name cached from the Slack API (users.info); refreshed when stale. */
+  slackDisplayName         String?
+  slackDisplayNameSyncedAt DateTime?
   /** Attend registration is complete ("complete" status). Gates voting. */
   attendCompleted Boolean @default(false)
   userId          String?

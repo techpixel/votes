@@ -1,11 +1,11 @@
 import { error } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
-import { getDisplayNames } from '$lib/server/cachet';
+import { getDisplayNames } from '$lib/server/slack';
 import type { PageServerLoad } from './$types';
 
 // Public read-only gallery — no auth. Real names and emails must never appear
 // here (they're for logged-in voters only); makers show only their Slack
-// display name via cachet, or "Anonymous".
+// display name via the Slack API, or "Anonymous".
 export const load: PageServerLoad = async ({ params }) => {
 	const event = await prisma.event.findUnique({ where: { slug: params.slug } });
 	if (!event) error(404, 'Event not found');
