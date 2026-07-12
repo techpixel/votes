@@ -32,31 +32,58 @@ export const actions: Actions = {
 
 		const participants = await prisma.participant.findMany({
 			where: { id: { in: memberIds }, eventId: ctx.event.id },
-			include: { teamMember: true }
+			include: {
+				teamMember: {
+					include: {
+						team: { include: { project: true, _count: { select: { members: true } } } }
+					}
+				}
+			}
 		});
 		if (participants.length !== memberIds.length) {
 			return fail(400, { message: 'Someone you selected is not registered for this event.' });
 		}
-		const taken = participants.find(
+		// Someone on another team can still be added if that team is just them
+		// with an unsubmitted draft — their solo team dissolves into this one.
+		const elsewhere = participants.filter(
 			(p) => p.teamMember && p.teamMember.teamId !== ctx.team?.id
 		);
-		if (taken) {
+		const stuck = elsewhere.find(
+			(p) => p.teamMember!.team._count.members > 1 || p.teamMember!.team.project?.submittedAt
+		);
+		if (stuck) {
+			const name = stuck.firstName ?? 'A person you selected';
 			return fail(400, {
-				message: `${taken.firstName ?? 'A person you selected'} is already on another team.`
+				message:
+					stuck.teamMember!.team._count.members > 1
+						? `${name} is already on another team.`
+						: `${name} already submitted a project of their own. Ask them to add you to their team instead.`
 			});
 		}
+		const dissolveTeamIds = elsewhere.map((p) => p.teamMember!.teamId);
 
-		// Airtable records of members about to be removed (cascade wipes the tracking rows).
-		const removedRecords = ctx.team
-			? await prisma.airtableRecord.findMany({
-					where: {
-						teamMember: { teamId: ctx.team.id, participantId: { notIn: memberIds } },
-						airtableRecordId: { not: null }
-					}
-				})
-			: [];
+		// Airtable records about to be orphaned: members removed from this team,
+		// plus anything on solo teams being dissolved (cascade wipes the tracking rows).
+		const removedRecords = await prisma.airtableRecord.findMany({
+			where: {
+				airtableRecordId: { not: null },
+				OR: [
+					...(ctx.team
+						? [{ teamMember: { teamId: ctx.team.id, participantId: { notIn: memberIds } } }]
+						: []),
+					...(dissolveTeamIds.length > 0
+						? [{ teamMember: { teamId: { in: dissolveTeamIds } } }]
+						: [])
+				]
+			}
+		});
 
 		await prisma.$transaction(async (tx) => {
+			// Dissolve absorbed members' solo draft teams (cascades their old
+			// teamMember + project) so the upsert below re-homes them here.
+			if (dissolveTeamIds.length > 0) {
+				await tx.team.deleteMany({ where: { id: { in: dissolveTeamIds } } });
+			}
 			let teamId = ctx.team?.id;
 			if (!teamId) {
 				const team = await tx.team.create({

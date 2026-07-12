@@ -16,14 +16,39 @@ export const GET: RequestHandler = async ({ locals, url }) => {
 	// Match by Slack display name, which requires resolving names for the whole
 	// candidate pool first (cachet memoizes, so this is cheap after the first
 	// search). First name remains matchable; emails are neither matched nor returned.
-	const candidates = await prisma.participant.findMany({
+	const pool = await prisma.participant.findMany({
 		where: {
 			eventId: ctx.event.id,
-			id: { not: ctx.participant.id },
-			teamMember: null // not already on a team
+			id: { not: ctx.participant.id }
 		},
-		select: { id: true, firstName: true, lastName: true, slackId: true }
+		select: {
+			id: true,
+			firstName: true,
+			lastName: true,
+			slackId: true,
+			teamMember: {
+				select: {
+					teamId: true,
+					team: {
+						select: {
+							project: { select: { submittedAt: true } },
+							_count: { select: { members: true } }
+						}
+					}
+				}
+			}
+		}
 	});
+
+	// Addable: teamless, or alone on an unsubmitted draft team — the team
+	// action dissolves that solo draft when they're added here.
+	const candidates = pool.filter(
+		(p) =>
+			!p.teamMember ||
+			(p.teamMember.teamId !== ctx.team?.id &&
+				p.teamMember.team._count.members === 1 &&
+				!p.teamMember.team.project?.submittedAt)
+	);
 
 	const displayNames = await getDisplayNames(
 		candidates.map((p) => p.slackId).filter((id): id is string => !!id)
