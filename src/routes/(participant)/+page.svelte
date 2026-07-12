@@ -1,5 +1,6 @@
 <script lang="ts">
 	import FlowCard from '$lib/components/participant/FlowCard.svelte';
+	import CardButton from '$lib/components/participant/CardButton.svelte';
 
 	let { data } = $props();
 
@@ -23,13 +24,8 @@
 				<span class="font-semibold">{data.email}</span> isn't registered for this event. Make sure you
 				sign in with the email you registered with, or ask an organizer to add you.
 			</p>
-			<form method="POST" action="/auth/logout">
-				<button
-					type="submit"
-					class="mt-4 cursor-pointer rounded-2xl border-2 border-cream bg-black/40 px-6 py-3 font-semibold backdrop-blur-[15px] transition-colors hover:bg-white/10"
-				>
-					Sign out
-				</button>
+			<form method="POST" action="/auth/logout" class="mt-4 w-full">
+				<CardButton>Sign out</CardButton>
 			</form>
 		</div>
 	</FlowCard>

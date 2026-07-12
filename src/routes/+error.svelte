@@ -27,7 +27,7 @@
 		<img
 			src="/brand/logo-lm.svg"
 			alt="Hack Club Horizons — VOTE!"
-			class="h-[79px] w-[194px] object-contain object-left"
+			class="h-[79px] w-[194px] object-contain object-left-top"
 		/>
 	</div>
 
