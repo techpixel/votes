@@ -67,10 +67,41 @@
 		hover.target = 0;
 	}
 
-	// Derive the mesh gradient stops from the screenshot: sample it small,
-	// sort by luminance, and take a chroma-weighted average per quartile into
-	// a dark→light 4-stop ramp that leans toward the image's colorful pixels.
+	// Derive the mesh gradient stops from the screenshot, deliberately
+	// multi-hue: bin the sampled pixels by hue (chroma²-weighted so saturated
+	// accents outvote washed-out backgrounds), pick the strongest distinct
+	// hues, and rebuild the ramp in the default palette's shape — a dark base
+	// plus three bright blob colors. Averaging pixels instead would collapse
+	// every stop toward the single dominant hue.
 	let meshPalette = $state<Palette>(DEFAULT_PALETTE);
+
+	// h is HSL hue / 60°, in [0, 6).
+	function hueSat(r: number, g: number, b: number) {
+		const max = Math.max(r, g, b);
+		const min = Math.min(r, g, b);
+		const c = max - min;
+		let h = 0;
+		if (c > 0) {
+			if (max === r) h = ((g - b) / c + 6) % 6;
+			else if (max === g) h = (b - r) / c + 2;
+			else h = (r - g) / c + 4;
+		}
+		const l = (max + min) / 2;
+		return { h, s: c === 0 ? 0 : c / (1 - Math.abs(2 * l - 1)) };
+	}
+
+	function hsl(h: number, s: number, l: number): [number, number, number] {
+		const a = s * Math.min(l, 1 - l);
+		const f = (n: number) => {
+			const k = (n + h * 2) % 12;
+			return l - a * Math.max(-1, Math.min(k - 3, 9 - k, 1));
+		};
+		return [f(0), f(8), f(4)];
+	}
+
+	// Clamp saturation into a vivid range; s === 0 stays 0 so the grayscale
+	// fallback isn't tinted red (hue 0).
+	const sat = (s: number, lo: number, hi: number) => (s === 0 ? 0 : Math.min(hi, Math.max(lo, s)));
 
 	$effect(() => {
 		const url = screenshotUrl;
@@ -82,7 +113,7 @@
 		img.crossOrigin = 'anonymous';
 		img.onload = () => {
 			try {
-				const N = 16;
+				const N = 24;
 				const ctx = document.createElement('canvas').getContext('2d', {
 					willReadFrequently: true
 				})!;
@@ -90,34 +121,70 @@
 				ctx.canvas.height = N;
 				ctx.drawImage(img, 0, 0, N, N);
 				const { data } = ctx.getImageData(0, 0, N, N);
-				const px: [number, number, number][] = [];
+
+				const BINS = 12;
+				const weight = new Array(BINS).fill(0);
+				const sums = Array.from({ length: BINS }, () => [0, 0, 0]);
 				for (let i = 0; i < data.length; i += 4) {
-					px.push([data[i] / 255, data[i + 1] / 255, data[i + 2] / 255]);
+					const r = data[i] / 255;
+					const g = data[i + 1] / 255;
+					const b = data[i + 2] / 255;
+					const c = Math.max(r, g, b) - Math.min(r, g, b);
+					// True grays carry no hue vote, but lightly tinted grays still
+					// count — the saturation floor below boosts their hue so it
+					// pops instead of reading as gray.
+					if (c < 0.03) continue;
+					const bin = Math.min(BINS - 1, Math.floor((hueSat(r, g, b).h / 6) * BINS));
+					const w = c * c;
+					weight[bin] += w;
+					sums[bin][0] += r * w;
+					sums[bin][1] += g * w;
+					sums[bin][2] += b * w;
 				}
-				px.sort(
-					(a, b) =>
-						a[0] * 0.2126 + a[1] * 0.7152 + a[2] * 0.0722 -
-						(b[0] * 0.2126 + b[1] * 0.7152 + b[2] * 0.0722)
-				);
-				const quartile = (from: number, to: number): [number, number, number] => {
-					const slice = px.slice(Math.floor(px.length * from), Math.ceil(px.length * to));
-					// Weight each pixel by chroma² so saturated colors dominate the
-					// stop and the ramp stays colorful; grays still contribute (the
-					// epsilon also keeps grayscale screenshots working) but a plain
-					// average would wash every stop toward gray.
-					const sum = [0, 0, 0];
-					let wsum = 0;
-					for (const p of slice) {
-						const chroma = Math.max(p[0], p[1], p[2]) - Math.min(p[0], p[1], p[2]);
-						const w = 0.02 + chroma * chroma;
-						sum[0] += p[0] * w;
-						sum[1] += p[1] * w;
-						sum[2] += p[2] * w;
-						wsum += w;
+
+				// Strongest hues first; skip bins adjacent to a pick so each stop
+				// is a genuinely different hue, and stop at bins too weak to be
+				// more than a few stray pixels.
+				const ranked = [...weight.keys()].sort((a, b) => weight[b] - weight[a]);
+				const picked: number[] = [];
+				for (const bin of ranked) {
+					if (weight[bin] === 0 || weight[bin] < weight[ranked[0]] * 0.04) break;
+					if (picked.some((p) => Math.min(Math.abs(p - bin), BINS - Math.abs(p - bin)) <= 1)) {
+						continue;
 					}
-					return [sum[0] / wsum, sum[1] / wsum, sum[2] / wsum];
-				};
-				meshPalette = [quartile(0, 0.25), quartile(0.25, 0.5), quartile(0.5, 0.75), quartile(0.75, 1)];
+					picked.push(bin);
+					if (picked.length === 4) break;
+				}
+
+				// Grayscale screenshot: no hue to derive, use a neutral gray ramp.
+				const hues = picked.length
+					? picked.map((bin) => {
+							const w = weight[bin];
+							return hueSat(sums[bin][0] / w, sums[bin][1] / w, sums[bin][2] / w);
+						})
+					: [{ h: 0, s: 0 }];
+
+				// The dominant hue becomes the dark base and the remaining hues
+				// fill the three blob stops. Screenshots with fewer than three
+				// distinct hues (most are white plus one accent) get analogous
+				// hues synthesized ±48° around what was found, so the ramp is
+				// deliberately multi-hue — like the default teal→mint→lime
+				// family — rather than one color at three lightnesses.
+				const rot = (c: { h: number; s: number }, d: number) => ({ h: (c.h + d + 6) % 6, s: c.s });
+				const base = hues[0];
+				const found = hues.slice(1);
+				const blobs =
+					found.length >= 3
+						? found.slice(0, 3)
+						: found.length === 2
+							? [found[0], found[1], rot(found[0], 0.8)]
+							: [rot(found[0] ?? base, -0.8), found[0] ?? base, rot(found[0] ?? base, 0.8)];
+				meshPalette = [
+					hsl(base.h, sat(base.s, 0.3, 0.7), 0.16),
+					hsl(blobs[0].h, sat(blobs[0].s, 0.5, 0.85), 0.46),
+					hsl(blobs[1].h, sat(blobs[1].s, 0.5, 0.85), 0.52),
+					hsl(blobs[2].h, sat(blobs[2].s, 0.5, 0.85), 0.58)
+				];
 			} catch {
 				// Canvas tainted (no CORS on the image host) — keep the default palette.
 				meshPalette = DEFAULT_PALETTE;
@@ -142,11 +209,6 @@
 		<div class="absolute inset-0" aria-hidden="true">
 			<LavaLampMesh palette={meshPalette} />
 			<div class="absolute inset-0 bg-black/20"></div>
-			<div
-				class="absolute inset-0 bg-gradient-to-b from-black/10 via-black/45 to-black/80 {size === 'lg'
-					? 'top-1/3'
-					: 'top-1/4'}"
-			></div>
 		</div>
 
 		<!-- Foil is a post-effect over the whole card, same as the Figma shader

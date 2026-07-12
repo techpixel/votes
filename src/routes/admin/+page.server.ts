@@ -1,6 +1,7 @@
 import { error, fail, redirect } from '@sveltejs/kit';
 import { prisma } from '$lib/server/db';
 import { getAdminScope } from '$lib/server/admin';
+import { slugify } from '$lib/server/slug';
 import type { Actions, PageServerLoad } from './$types';
 
 export const load: PageServerLoad = async ({ locals }) => {
@@ -37,16 +38,7 @@ export const actions: Actions = {
 		const name = String(form.get('name') ?? '').trim();
 		if (!name) return fail(400, { message: 'Event name is required' });
 
-		const slug =
-			String(form.get('slug') ?? '')
-				.trim()
-				.toLowerCase()
-				.replace(/[^a-z0-9-]+/g, '-')
-				.replace(/^-+|-+$/g, '') ||
-			name
-				.toLowerCase()
-				.replace(/[^a-z0-9-]+/g, '-')
-				.replace(/^-+|-+$/g, '');
+		const slug = slugify(String(form.get('slug') ?? '').trim()) || slugify(name);
 
 		const existing = await prisma.event.findUnique({ where: { slug } });
 		if (existing) return fail(400, { message: `An event with slug "${slug}" already exists` });
