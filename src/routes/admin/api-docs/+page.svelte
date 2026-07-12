@@ -61,11 +61,11 @@
 		},
 		{ status: '401', cause: 'Missing or incorrect API key.' },
 		{ status: '409', cause: 'An event with the same slug already exists.' },
-		{ status: '503', cause: 'VOTES_API_KEY is not configured on the server.' }
+		{ status: '503', cause: 'VOTE_API_KEY is not configured on the server.' }
 	];
 
 	const curlExample = $derived(`curl -X POST ${origin}/api/v1/events \\
-  -H "Authorization: Bearer $VOTES_API_KEY" \\
+  -H "Authorization: Bearer $VOTE_API_KEY" \\
   -H "Content-Type: application/json" \\
   -d '{
     "name": "Scrapyard Austin",
@@ -113,7 +113,7 @@
 					>Authorization: Bearer &lt;key&gt;</code
 				>
 				header. The key is a single shared secret held by the operators and configured on the server via
-				the <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">VOTES_API_KEY</code>
+				the <code class="rounded bg-muted px-1.5 py-0.5 font-mono text-xs">VOTE_API_KEY</code>
 				environment variable — it is never shown here.
 			</p>
 			<p class="text-muted-foreground">

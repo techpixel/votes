@@ -24,7 +24,7 @@
 	<div class="grid grid-cols-2 gap-4 sm:grid-cols-4">
 		{#each [['Participants', data.event.counts.participants], ['Teams', data.event.counts.teams], ['Projects', data.event.counts.projects], ['Votes', data.event.counts.votes]] as [label, count] (label)}
 			<Card.Root>
-				<Card.Content class="pt-4">
+				<Card.Content>
 					<p class="text-3xl font-semibold">{count}</p>
 					<p class="text-sm text-muted-foreground">{label}</p>
 				</Card.Content>
@@ -42,11 +42,11 @@
 		<Card.Content>
 			<div class="grid grid-cols-1 gap-3 sm:grid-cols-4">
 				{#each stages as s (s.value)}
-					<form method="POST" action="?/stage" use:enhance>
+					<form method="POST" action="?/stage" use:enhance class="h-full">
 						<input type="hidden" name="stage" value={s.value} />
 						<button
 							type="submit"
-							class="w-full cursor-pointer rounded-lg border p-3 text-left transition-colors {data
+							class="h-full w-full cursor-pointer rounded-lg border p-3 text-left transition-colors {data
 								.event.stage === s.value
 								? 'border-foreground bg-accent'
 								: 'hover:bg-accent/50'}"

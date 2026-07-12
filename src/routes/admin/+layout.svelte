@@ -51,7 +51,13 @@
 >
 	<aside class="sticky top-0 flex h-screen w-64 shrink-0 flex-col border-r bg-sidebar">
 		<div class="flex items-center justify-between border-b px-5 py-4">
-			<a href="/admin" class="text-sm font-semibold tracking-tight">Vote Admin</a>
+			<a href="/admin">
+				<img
+					src={theme === 'dark' ? '/brand/logo-dm.svg' : '/brand/logo-lm.svg'}
+					alt="Vote"
+					class="h-5"
+				/>
+			</a>
 			{#if data.superadmin}
 				<Badge variant="secondary" class="text-[10px]">Superadmin</Badge>
 			{/if}
@@ -67,15 +73,17 @@
 			>
 				All events
 			</a>
-			<a
-				href="/admin/api-docs"
-				class="rounded-md px-3 py-2 text-sm font-medium transition-colors {page.url.pathname ===
-				'/admin/api-docs'
-					? 'bg-sidebar-accent text-sidebar-accent-foreground'
-					: 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
-			>
-				API
-			</a>
+			{#if data.superadmin}
+				<a
+					href="/admin/api-docs"
+					class="rounded-md px-3 py-2 text-sm font-medium transition-colors {page.url.pathname ===
+					'/admin/api-docs'
+						? 'bg-sidebar-accent text-sidebar-accent-foreground'
+						: 'text-muted-foreground hover:bg-sidebar-accent/60 hover:text-foreground'}"
+				>
+					API
+				</a>
+			{/if}
 
 			<p class="mt-3 px-3 pb-1 text-xs font-semibold tracking-wide text-muted-foreground uppercase">
 				Events

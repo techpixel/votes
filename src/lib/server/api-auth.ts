@@ -4,11 +4,11 @@ import { env } from '$env/dynamic/private';
 
 /**
  * Guards the external HTTP API (bearer key in the Authorization header,
- * compared against VOTES_API_KEY). Throws 503 when the key is unconfigured so
+ * compared against VOTE_API_KEY). Throws 503 when the key is unconfigured so
  * the API fails closed, and 401 when the caller's key is missing or wrong.
  */
 export function requireApiKey(request: Request): void {
-	const expected = env.VOTES_API_KEY;
+	const expected = env.VOTE_API_KEY;
 	if (!expected) error(503, 'API is not configured');
 
 	const header = request.headers.get('authorization') ?? '';
