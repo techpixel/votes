@@ -24,7 +24,7 @@
 	</div>
 	{#if showCruxLogo}
 		<img
-			src={data.logoUrl}
+			src={page.data.logoUrl}
 			alt="Event logo"
 			class="absolute top-4 right-4 z-10 h-20 w-[137px] object-contain"
 		/>

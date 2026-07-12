@@ -53,7 +53,12 @@
 				'Malformed JSON, failed validation, or a slug with no alphanumeric characters.'
 		},
 		{ status: '401', cause: 'Missing or incorrect API key.' },
-		{ status: '409', cause: 'An event with the same slug already exists.' },
+		{ status: '503', cause: 'VOTE_API_KEY is not configured on the server.' }
+	];
+
+	const getErrors = [
+		{ status: '401', cause: 'Missing or incorrect API key.' },
+		{ status: '404', cause: 'No event exists with the given slug.' },
 		{ status: '503', cause: 'VOTE_API_KEY is not configured on the server.' }
 	];
 
@@ -75,10 +80,14 @@
   "maxTeamSize": 3,
   "logoUrl": "https://cdn.hackclub.com/example/logo.webp",
   "backgroundUrl": "https://cdn.hackclub.com/example/background.webp",
+  "checklistItems": ["Add teams", "Add projects", "Open voting"],
   "createdAt": "2026-07-11T00:00:00.000Z",
   "adminUrl": "${origin}/admin/events/cmcz1234567890abcdef",
   "galleryUrl": "${origin}/gallery/scrapyard-austin"
 }`);
+
+	const getCurlExample = $derived(`curl ${origin}/api/v1/events/scrapyard-austin \\
+  -H "Authorization: Bearer $VOTE_API_KEY"`);
 </script>
 
 <svelte:head>
