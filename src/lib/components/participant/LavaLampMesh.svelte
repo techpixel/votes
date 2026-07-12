@@ -22,8 +22,15 @@
 		blobScale = 2,
 		softness = 0.6,
 		warp = 0.8,
+		seed = 0,
 		palette = DEFAULT_PALETTE
-	}: { blobScale?: number; softness?: number; warp?: number; palette?: Palette } = $props();
+	}: {
+		blobScale?: number;
+		softness?: number;
+		warp?: number;
+		seed?: number;
+		palette?: Palette;
+	} = $props();
 
 	let canvas: HTMLCanvasElement;
 	let supported = $state(true);
@@ -35,6 +42,7 @@ uniform vec2 uDims;
 uniform float uBlobScale;
 uniform float uSoftness;
 uniform float uWarp;
+uniform float uSeed;
 uniform vec3 uColors[4];
 out vec4 fragColor;
 
@@ -74,7 +82,10 @@ vec3 ramp(float t) {
 void main() {
 	vec2 uv = gl_FragCoord.xy / uDims;
 	uv.y = 1.0 - uv.y; // Figma UVs are top-left origin
-	vec2 aspectUv = vec2(uv.x * (uDims.x / uDims.y), uv.y);
+	// The noise field is deterministic in uv, so without a seed every card
+	// shows the identical blob pattern; the seed slides the sample window to
+	// a distinct region of the field per card.
+	vec2 aspectUv = vec2(uv.x * (uDims.x / uDims.y), uv.y) + vec2(uSeed * 47.13, uSeed * 89.71);
 	float scale = 1.0 / uBlobScale;
 	vec2 warpOffset = vec2(
 		fbm(aspectUv * scale * 2.3 + vec2(1.7, 9.2)),
@@ -158,6 +169,7 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 			gl.uniform1f(gl.getUniformLocation(program, 'uBlobScale'), blobScale);
 			gl.uniform1f(gl.getUniformLocation(program, 'uSoftness'), softness);
 			gl.uniform1f(gl.getUniformLocation(program, 'uWarp'), warp);
+			gl.uniform1f(gl.getUniformLocation(program, 'uSeed'), seed);
 			gl.uniform3fv(gl.getUniformLocation(program, 'uColors[0]'), palette.flat());
 			gl.drawArrays(gl.TRIANGLES, 0, 3);
 		};
@@ -178,6 +190,7 @@ void main() { gl_Position = vec4(aPos, 0.0, 1.0); }`;
 		void blobScale;
 		void softness;
 		void warp;
+		void seed;
 		renderNow?.();
 	});
 

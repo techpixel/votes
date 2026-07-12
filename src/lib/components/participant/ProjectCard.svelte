@@ -32,6 +32,22 @@
 
 	let card = $state<HTMLDivElement>();
 
+	// Per-card randomness, hashed from the project name so it's stable across
+	// re-renders and the same project matches between the list and detail
+	// pages. Without a seed every card renders the identical mesh field.
+	function hash01(s: string) {
+		let h = 2166136261;
+		for (let i = 0; i < s.length; i++) {
+			h ^= s.charCodeAt(i);
+			h = Math.imul(h, 16777619);
+		}
+		return (h >>> 0) / 4294967296;
+	}
+	const meshSeed = $derived(hash01(name));
+	const meshBlobScale = $derived(1.6 + hash01(name + '/scale') * 1.1);
+	const meshWarp = $derived(0.55 + hash01(name + '/warp') * 0.6);
+	const meshSoftness = $derived(0.4 + hash01(name + '/soft') * 0.3);
+
 	// The Card Foil shader's light rests centered and follows the cursor on
 	// hover — the foil is always visible (constant intensity), never fades out.
 	const FOIL_REST = { x: 0.5, y: 0.5 };
@@ -72,8 +88,21 @@
 	// accents outvote washed-out backgrounds), pick the strongest distinct
 	// hues, and rebuild the ramp in the default palette's shape — a dark base
 	// plus three bright blob colors. Averaging pixels instead would collapse
-	// every stop toward the single dominant hue.
-	let meshPalette = $state<Palette>(DEFAULT_PALETTE);
+	// every stop toward the single dominant hue. Null means "no usable
+	// screenshot" and falls back to the seed-rotated default ramp below.
+	let meshPalette = $state<Palette | null>(null);
+
+	// Cards without a screenshot (or whose screenshot fails to load) used to
+	// all share the same teal default ramp; rotate its hues by the card seed
+	// so each fallback card gets its own color family.
+	const fallbackPalette = $derived.by(() => {
+		const d = hash01(name + '/hue') * 6;
+		return DEFAULT_PALETTE.map(([r, g, b]) => {
+			const { h, s } = hueSat(r, g, b);
+			const l = (Math.max(r, g, b) + Math.min(r, g, b)) / 2;
+			return hsl((h + d) % 6, s, l);
+		}) as Palette;
+	});
 
 	// h is HSL hue / 60°, in [0, 6).
 	function hueSat(r: number, g: number, b: number) {
@@ -109,10 +138,8 @@
 
 	$effect(() => {
 		const url = screenshotUrl;
-		if (!url) {
-			meshPalette = DEFAULT_PALETTE;
-			return;
-		}
+		meshPalette = null;
+		if (!url) return;
 		const img = new Image();
 		img.crossOrigin = 'anonymous';
 		img.onload = () => {
@@ -170,19 +197,29 @@
 
 				// The dominant hue becomes the dark base and the remaining hues
 				// fill the three blob stops. Screenshots with fewer than three
-				// distinct hues (most are white plus one accent) get analogous
-				// hues synthesized ±48° around what was found, so the ramp is
-				// deliberately multi-hue — like the default teal→mint→lime
-				// family — rather than one color at three lightnesses.
+				// distinct hues (most are white plus one accent) get hues
+				// synthesized around what was found. The rotation is wide
+				// (±84°–120°, seed-varied per card) — analogous ±48° rotations
+				// kept the whole ramp inside one hue family, so cards read as
+				// a single color at three lightnesses.
 				const rot = (c: { h: number; s: number }, d: number) => ({ h: (c.h + d + 6) % 6, s: c.s });
+				const hueDist = (a: number, b: number) => Math.min(Math.abs(a - b), 6 - Math.abs(a - b));
+				const spread = 1.4 + hash01(name + '/spread') * 0.6; // hue/60° units
 				const base = hues[0];
 				const found = hues.slice(1);
+				const anchor = found[0] ?? base;
+				// Two found hues: rotate away from the side the second hue occupies
+				// so the synthesized third doesn't land on top of it.
+				const third =
+					found.length === 2 && hueDist(rot(found[0], spread).h, found[1].h) < 0.7
+						? rot(found[0], -spread)
+						: rot(anchor, spread);
 				const blobs =
 					found.length >= 3
 						? found.slice(0, 3)
 						: found.length === 2
-							? [found[0], found[1], rot(found[0], 0.8)]
-							: [rot(found[0] ?? base, -0.8), found[0] ?? base, rot(found[0] ?? base, 0.8)];
+							? [found[0], found[1], third]
+							: [rot(anchor, -spread), anchor, third];
 				meshPalette = [
 					hsl(base.h, sat(base.s, 0.3, 0.65), 0.16),
 					hsl(blobs[0].h, sat(blobs[0].s, 0.45, 0.75), 0.5),
@@ -190,8 +227,9 @@
 					hsl(blobs[2].h, sat(blobs[2].s, 0.45, 0.75), 0.62)
 				];
 			} catch {
-				// Canvas tainted (no CORS on the image host) — keep the default palette.
-				meshPalette = DEFAULT_PALETTE;
+				// Canvas tainted (no CORS on the image host) — fall back to the
+				// seed-rotated default ramp.
+				meshPalette = null;
 			}
 		};
 		img.src = url;
@@ -211,7 +249,13 @@
 	>
 		<!-- Backdrop: the Figma "Lava Lamp Mesh" shader fill, ported to WebGL -->
 		<div class="absolute inset-0" aria-hidden="true">
-			<LavaLampMesh palette={meshPalette} />
+			<LavaLampMesh
+				palette={meshPalette ?? fallbackPalette}
+				seed={meshSeed}
+				blobScale={meshBlobScale}
+				warp={meshWarp}
+				softness={meshSoftness}
+			/>
 			<div class="absolute inset-0 bg-black/20"></div>
 		</div>
 
